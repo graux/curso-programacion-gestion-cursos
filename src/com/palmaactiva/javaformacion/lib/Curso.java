@@ -16,7 +16,7 @@ public class Curso implements Tabulable, Serializable, Comparable<Curso> {
         COMPETENCIAS_TRANSVERSALES,
         CREACIÓN_GESTIÓN_EMPRESAS,
         FORMACIÓN_OFICIOS,
-        FORMACIÓN_ONLIE,
+        FORMACIÓN_ONLINE,
         IDIOMAS,
         NÁUTICA,
         NUEVAS_TECNOLOGIAS;
@@ -86,7 +86,28 @@ public class Curso implements Tabulable, Serializable, Comparable<Curso> {
     }
 
     public void setDocente(Profesor docente) {
+        if (this.docente != null && !this.docente.equals(docente)) {
+            this.docente.removeCurso(this);
+        }
         this.docente = docente;
+    }
+
+    public void setCodigo(int codigo) {
+        this.codigo = codigo;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public void setCategoria(CategoríaCurso categoria) {
+        this.categoria = categoria;
+    }
+
+    public void clearAlumnos() {
+        if (this.alumnos != null) {
+            this.alumnos.clear();
+        }
     }
 
     @Override
@@ -124,6 +145,12 @@ public class Curso implements Tabulable, Serializable, Comparable<Curso> {
         if (!this.alumnos.contains(alumno)) {
             this.alumnos.add(alumno);
             alumno.addCurso(this);
+        }
+    }
+
+    public void removeAlumno(Alumno alumno) {
+        if (this.alumnos != null && this.alumnos.contains(alumno)) {
+            this.alumnos.remove(alumno);
         }
     }
 

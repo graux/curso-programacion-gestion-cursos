@@ -70,4 +70,16 @@ public class Profesor extends Persona {
         super.addCurso(nuevoCurso);
         nuevoCurso.setDocente(this);
     }
+
+    @Override
+    public void clearCursos() {
+        for (Curso curso : this.cursos) {
+            curso.setDocente(null);
+        }
+        super.clearCursos();
+    }
+
+    public void clearCategorias() {
+        this.categorias.clear();
+    }
 }

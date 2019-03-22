@@ -45,4 +45,12 @@ public class Alumno extends Persona {
             nuevoCurso.addAlumno(this);
         }
     }
+
+    @Override
+    public void clearCursos() {
+        for (Curso curso : this.cursos) {
+            curso.removeAlumno(this);
+        }
+        super.clearCursos();
+    }
 }

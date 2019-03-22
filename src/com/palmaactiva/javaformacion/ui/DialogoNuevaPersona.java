@@ -14,12 +14,11 @@ import com.palmaactiva.javaformacion.ui.validacion.ValidadorNuevaPersona;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import javax.swing.DefaultListModel;
 import javax.swing.InputVerifier;
 import javax.swing.JOptionPane;
-import javax.swing.ListModel;
 
 /**
  *
@@ -30,30 +29,32 @@ public class DialogoNuevaPersona extends javax.swing.JDialog {
     private java.lang.Class<? extends Persona> tipoPersona;
     private VentanaPrincipal ventanaPrincipal;
     private InputVerifier validadorFormulario;
-    private Curso[] cursos;
+    private ArrayList<Curso> cursos;
     private Persona personaAEditar;
+    private ArrayList<Curso.CategoríaCurso> categorias;
+    private ProveedorDatos proveedorDatos;
 
     /**
      * Creates new form DialogoNuevoAlumno
      */
     public <T extends Persona> DialogoNuevaPersona(java.awt.Frame parent, boolean modal, java.lang.Class<T> tipoPersona, ProveedorDatos datos) {
         super(parent, modal);
+        this.proveedorDatos = datos;
         initComponents();
         this.tipoPersona = tipoPersona;
         this.ventanaPrincipal = (VentanaPrincipal) parent;
         this.validadorFormulario = new ValidadorNuevaPersona();
         DefaultListModel modeloListaCursos = new DefaultListModel();
-        Collection<Curso> todosLosCursos = datos.getCursos();
-        this.cursos = todosLosCursos.toArray(new Curso[todosLosCursos.size()]);
-        Arrays.sort(this.cursos);
-        modeloListaCursos.addAll(Arrays.asList(cursos));
+        this.cursos = new ArrayList(datos.getCursos());
+        Collections.sort(this.cursos);
+        modeloListaCursos.addAll(this.cursos);
         this.ListaClases.setModel(modeloListaCursos);
+        this.categorias = new ArrayList<>(Arrays.asList(Curso.CategoríaCurso.values()));
+        Collections.sort(this.categorias);
 
         if (tipoPersona == Profesor.class) {
             DefaultListModel modeloListaCategorias = new DefaultListModel();
-            Curso.CategoríaCurso[] categorias = Curso.CategoríaCurso.values();
-            Arrays.sort(categorias);
-            modeloListaCategorias.addAll(Arrays.asList(categorias));
+            modeloListaCategorias.addAll(categorias);
             this.ListaCategorias.setModel(modeloListaCategorias);
             this.PanelCategorias.setVisible(true);
         } else {
@@ -66,7 +67,41 @@ public class DialogoNuevaPersona extends javax.swing.JDialog {
         this(parent, modal, personaAEditar.getClass(), datos);
         this.CampoNombre.setText(personaAEditar.getNombre());
         this.CampoApellidos.setText(personaAEditar.getApellidos());
+        this.CampoNumeroDNI.setText(String.valueOf(personaAEditar.getNumeroDNI()));
+        if (personaAEditar.esNIE()) {
+            RadioNIE.setSelected(true);
+            this.ComboLetraNIE.setSelectedItem(Character.toString(personaAEditar.getLetraNIE()));
+        } else {
+            RadioDNI.setSelected(true);
+            this.ComboLetraNIE.setSelectedIndex(0);
+        }
+        this.CampoFechaNacimiento.setDate(personaAEditar.getFechaNacimiento().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+
+        if (personaAEditar.getCursos() != null) {
+            int[] indicesSeleccionados = new int[personaAEditar.getCursos().size()];
+            int indice = 0;
+            for (Curso curso : personaAEditar.getCursos()) {
+                indicesSeleccionados[indice] = this.cursos.indexOf(curso);
+                indice++;
+            }
+            this.ListaClases.setSelectedIndices(indicesSeleccionados);
+        }
+
+        if (personaAEditar.getClass() == Profesor.class) {
+            Profesor profe = (Profesor) personaAEditar;
+            if (profe.getCategorias() != null) {
+                int[] indicesSeleccionados = new int[profe.getCategorias().length];
+                int indice = 0;
+                for (Curso.CategoríaCurso cat : profe.getCategorias()) {
+                    indicesSeleccionados[indice] = this.categorias.indexOf(cat);
+                    indice++;
+                }
+                this.ListaCategorias.setSelectedIndices(indicesSeleccionados);
+            }
+        }
+
         this.personaAEditar = personaAEditar;
+        this.ButtonCrear.setText("GUARDAR");
     }
 
     /**
@@ -294,6 +329,7 @@ public class DialogoNuevaPersona extends javax.swing.JDialog {
             } else {
                 this.guardarPersona();
             }
+            this.proveedorDatos.setDatosGuardados(false);
             this.ventanaPrincipal.actualizarDatos();
             this.dispose();
         } catch (Exception ex) {
@@ -302,17 +338,27 @@ public class DialogoNuevaPersona extends javax.swing.JDialog {
     }//GEN-LAST:event_ButtonCrearActionPerformed
 
     private void crearNuevaPersona() {
-        Persona nuevaPersona = null;
+        Persona nuevaPersona = crearPersona();
         if (this.tipoPersona == Alumno.class) {
-            nuevaPersona = this.crearAlumno();
+            nuevaPersona = this.actualizarClassesAlumno(new Alumno(nuevaPersona));
         } else {
-            nuevaPersona = this.crearProfesor();
+            nuevaPersona = this.actualizarClassesProfesor(new Profesor(nuevaPersona));
         }
         this.ventanaPrincipal.añadirTabulable(nuevaPersona);
     }
 
     private void guardarPersona() {
-        // TODO Setters
+        this.personaAEditar.setNombre(this.CampoNombre.getText().trim());
+        this.personaAEditar.setApellidos(this.CampoApellidos.getText().trim());
+        this.personaAEditar.setApellidos(this.CampoApellidos.getText().trim());
+        Date fechaNacimiento = Date.from(this.CampoFechaNacimiento.getDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
+        this.personaAEditar.setFechaNacimiento(fechaNacimiento);
+        if (this.personaAEditar.getClass() == Alumno.class) {
+            this.actualizarClassesAlumno((Alumno) this.personaAEditar);
+        } else {
+            this.actualizarCategoriasProfesor((Profesor) this.personaAEditar);
+            this.actualizarClassesProfesor((Profesor) this.personaAEditar);
+        }
     }
 
     protected InputVerifier getValidadorFormularion() {
@@ -351,21 +397,30 @@ public class DialogoNuevaPersona extends javax.swing.JDialog {
         return new Persona(nombre, apellidos, fechaNacimiento, numeroDNI);
     }
 
-    private Alumno crearAlumno() {
-        Alumno alumno = new Alumno(this.crearPersona());
+    private Alumno actualizarClassesAlumno(Alumno alumno) {
+        alumno.clearCursos();
         int[] clasesSeleccionadas = this.ListaClases.getSelectedIndices();
         for (int indiceCurso : clasesSeleccionadas) {
-            this.cursos[indiceCurso].addAlumno((Alumno) alumno);
+            this.cursos.get(indiceCurso).addAlumno((Alumno) alumno);
         }
-
         return alumno;
     }
 
-    private Profesor crearProfesor() {
-        Profesor profe = new Profesor(this.crearPersona());
+    private Profesor actualizarClassesProfesor(Profesor profe) {
+        profe.clearCursos();
         int[] clasesSeleccionadas = this.ListaClases.getSelectedIndices();
         for (int indiceCurso : clasesSeleccionadas) {
-            this.cursos[indiceCurso].setDocente((Profesor) profe);
+            profe.addCurso(this.cursos.get(indiceCurso));
+        }
+
+        return profe;
+    }
+
+    private Profesor actualizarCategoriasProfesor(Profesor profe) {
+        profe.clearCategorias();
+        int[] categoriasSeleccionadas = this.ListaCategorias.getSelectedIndices();
+        for (int indiceCategoria : categoriasSeleccionadas) {
+            profe.addCategoria(this.categorias.get(indiceCategoria));
         }
 
         return profe;

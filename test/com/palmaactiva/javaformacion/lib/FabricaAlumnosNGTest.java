@@ -16,8 +16,8 @@ import org.testng.annotations.Test;
  */
 public class FabricaAlumnosNGTest {
 
-    private FabricaTabulables fabricaAlumnos;
-    private ProveedorDatos datos;
+    private final FabricaTabulables fabricaAlumnos;
+    private final ProveedorDatos datos;
 
     public FabricaAlumnosNGTest() {
         this.datos = new MockDatos();

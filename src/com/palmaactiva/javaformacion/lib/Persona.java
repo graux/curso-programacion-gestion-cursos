@@ -14,48 +14,12 @@ import java.util.Locale;
 /**
  * @author Fran Grau <fran@kydemy.com>
  */
-public class Persona implements Tabulable, Serializable {
+public class Persona implements Tabulable, Serializable, Comparable<Persona> {
 
     public static final long serialVersionUID = 900L;
 
     private static final char[] LETRAS_DNI = {'T', 'R', 'W', 'A', 'G', 'M', 'Y', 'F', 'P', 'D', 'X', 'B', 'N', 'J', 'Z', 'S', 'Q', 'V', 'H', 'L', 'C', 'K', 'E'};
     private static final DecimalFormat formatoDNI = (DecimalFormat) NumberFormat.getInstance(new Locale("es", "ES"));
-
-    protected String nombre;
-    protected String apellidos;
-    protected int numeroDNI;
-    protected char letraNIE;
-    protected Date fechaNacimiento;
-    protected List<Curso> cursos;
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public String getApellidos() {
-        return apellidos;
-    }
-
-    public int getNumeroDNI() {
-        return numeroDNI;
-    }
-
-    public long getNumeroDNIComputado() {
-        return computarDNI(this.numeroDNI, this.letraNIE);
-    }
-
-    public List<Curso> getCursos() {
-        return this.cursos;
-    }
-
-    public void addCurso(Curso nuevoCurso) {
-        if (this.cursos == null) {
-            this.cursos = new ArrayList<>(16);
-        }
-        if (!this.cursos.contains(nuevoCurso)) {
-            this.cursos.add(nuevoCurso);
-        }
-    }
 
     public static String[] getColumnas() {
         return new String[]{
@@ -75,6 +39,32 @@ public class Persona implements Tabulable, Serializable {
         };
     }
 
+    public static long computarDNI(int numDNI, char letraNIE) {
+        if (letraNIE == Character.UNASSIGNED) {
+            return numDNI;
+        }
+        String numDniStr = String.valueOf(numDNI);
+        switch (letraNIE) {
+            case 'X':
+                numDniStr = '0' + numDniStr;
+                break;
+            case 'Y':
+                numDniStr = '1' + numDniStr;
+                break;
+            case 'Z':
+                numDniStr = '2' + numDniStr;
+                break;
+        }
+        return Long.parseLong(numDniStr);
+    }
+
+    protected String nombre;
+    protected String apellidos;
+    protected int numeroDNI;
+    protected char letraNIE;
+    protected Date fechaNacimiento;
+    protected transient List<Curso> cursos;
+
     public Persona(String nombre, String apellidos, Date fechaNacimiento, int numDni, char letraNIE) {
         this.nombre = nombre;
         this.apellidos = apellidos;
@@ -86,6 +76,73 @@ public class Persona implements Tabulable, Serializable {
 
     public Persona(String nombre, String apellidos, Date fechaNacimiento, int numDni) {
         this(nombre, apellidos, fechaNacimiento, numDni, (char) Character.UNASSIGNED);
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getApellidos() {
+        return apellidos;
+    }
+
+    public int getNumeroDNI() {
+        return numeroDNI;
+    }
+
+    public int getLetraNIE() {
+        return letraNIE;
+    }
+
+    public Date getFechaNacimiento() {
+        return this.fechaNacimiento;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public void setApellidos(String apellidos) {
+        this.apellidos = apellidos;
+    }
+
+    public void setNumeroDNI(int numeroDNI) {
+        this.numeroDNI = numeroDNI;
+    }
+
+    public void setLetraNIE(char letraNIE) {
+        this.letraNIE = letraNIE;
+    }
+
+    public void setFechaNacimiento(Date fechaNacimiento) {
+        this.fechaNacimiento = fechaNacimiento;
+    }
+
+    public long getNumeroDNIComputado() {
+        return computarDNI(this.numeroDNI, this.letraNIE);
+    }
+
+    public List<Curso> getCursos() {
+        return this.cursos;
+    }
+
+    public void clearCursos() {
+        this.cursos.clear();
+    }
+
+    public void addCurso(Curso nuevoCurso) {
+        if (this.cursos == null) {
+            this.cursos = new ArrayList<>(16);
+        }
+        if (!this.cursos.contains(nuevoCurso)) {
+            this.cursos.add(nuevoCurso);
+        }
+    }
+
+    public void removeCurso(Curso curso) {
+        if (this.cursos.contains(curso)) {
+            this.cursos.remove(curso);
+        }
     }
 
     @Override
@@ -111,27 +168,12 @@ public class Persona implements Tabulable, Serializable {
         return identificador;
     }
 
-    public static long computarDNI(int numDNI, char letraNIE) {
-        if (letraNIE == Character.UNASSIGNED) {
-            return numDNI;
-        }
-        String numDniStr = String.valueOf(numDNI);
-        switch (letraNIE) {
-            case 'X':
-                numDniStr = '0' + numDniStr;
-                break;
-            case 'Y':
-                numDniStr = '1' + numDniStr;
-                break;
-            case 'Z':
-                numDniStr = '2' + numDniStr;
-                break;
-        }
-        return Long.parseLong(numDniStr);
-    }
-
     public String getNombreCompleto() {
         return this.nombre + " " + this.apellidos;
+    }
+
+    public boolean esNIE() {
+        return this.letraNIE != Character.UNASSIGNED;
     }
 
     @Override
@@ -160,5 +202,10 @@ public class Persona implements Tabulable, Serializable {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public int compareTo(Persona otraPersona) {
+        return this.nombre.compareTo(otraPersona.nombre);
     }
 }

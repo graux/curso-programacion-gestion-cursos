@@ -19,6 +19,36 @@ import java.util.Collection;
 public class MockDatos implements ProveedorDatos {
 
     @Override
+    public void cargarDatos(Actualizable progresable, String rutaArchivo) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void borrarDatos(Actualizable ventana) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Profesor buscarProfesor(long dniComputado) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Alumno buscarAlumno(long dniComputado) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public boolean isDatosGuardados() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void setDatosGuardados(boolean nuevoEstado) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
     public void añadirTabulable(Tabulable nuevaInstancia, Actualizable ventana) {
 
     }
@@ -69,11 +99,11 @@ public class MockDatos implements ProveedorDatos {
 
     @Override
     public boolean existeCurso(int IDCurso) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return false;
     }
 
     @Override
     public boolean existeDNI(long DNIcomputado) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return false;
     }
 }

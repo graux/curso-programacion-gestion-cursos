@@ -6,6 +6,8 @@
 package com.palmaactiva.javaformacion.ui;
 
 import com.palmaactiva.javaformacion.io.Actualizable;
+import com.palmaactiva.javaformacion.io.Datos;
+import com.palmaactiva.javaformacion.io.ExcepcionDatos;
 import com.palmaactiva.javaformacion.io.ProveedorDatos;
 import com.palmaactiva.javaformacion.lib.Alumno;
 import com.palmaactiva.javaformacion.lib.Curso;
@@ -15,10 +17,13 @@ import com.palmaactiva.javaformacion.lib.Persona;
 import com.palmaactiva.javaformacion.lib.Profesor;
 import com.palmaactiva.javaformacion.lib.Tabulable;
 import java.awt.Image;
-import java.io.FileFilter;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
@@ -47,8 +52,12 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
      * Creates new form VentanaPrincipal
      */
     public VentanaPrincipal(ProveedorDatos datosAplicacion) {
-        initComponents();
         this.datosAplicacion = datosAplicacion;
+        initComponents();
+        iniciarInterfaz();
+    }
+
+    private void iniciarInterfaz() {
         this.TablaDatos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         ListSelectionModel selectionModel = TablaDatos.getSelectionModel();
         selectionModel.addListSelectionListener(new ListSelectionListener() {
@@ -65,6 +74,16 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
             }
         });
         this.TablaDatos.setDefaultEditor(Object.class, null);
+        this.TablaDatos.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent evento) {
+                JTable tabla = (JTable) evento.getSource();
+                if (evento.getClickCount() == 2 && tabla.getSelectedRow() >= 0) {
+                    VentanaPrincipal.this.editarFilaSeleccionada();
+                }
+            }
+
+        });
         datosAplicacion.cargarDatos(this);
     }
 
@@ -83,6 +102,7 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
 
         GrupoModos = new javax.swing.ButtonGroup();
         DialogoSeleccionArchivo = new javax.swing.JFileChooser();
+        DialogoImportarExportar = new javax.swing.JFileChooser();
         BarraBotones = new javax.swing.JToolBar();
         BotonAlumnos = new javax.swing.JToggleButton();
         BotonProfesores = new javax.swing.JToggleButton();
@@ -107,14 +127,23 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
         MenuItemAlumnosAleatorios = new javax.swing.JMenuItem();
         MenuItemProfesoresAleatorios = new javax.swing.JMenuItem();
         MenuItemCursosAleatorios = new javax.swing.JMenuItem();
+        jSeparator4 = new javax.swing.JPopupMenu.Separator();
+        MenuItemBorrar = new javax.swing.JMenuItem();
 
-        DialogoSeleccionArchivo.setFileFilter(new FileNameExtensionFilter("Archivos JavaFormacion", "jfn", "text"));
+        DialogoSeleccionArchivo.setFileFilter(new FileNameExtensionFilter("Archivos JavaFormacion", Datos.EXTENSION_JAVAFORMACION));
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        DialogoImportarExportar.setFileFilter(new FileNameExtensionFilter("Archivos JSON", Datos.EXTENSION_JSON, "text"));
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setTitle("Java Formación");
         setMinimumSize(new java.awt.Dimension(800, 600));
         setPreferredSize(new java.awt.Dimension(800, 600));
         setSize(new java.awt.Dimension(800, 600));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         BarraBotones.setFloatable(false);
         BarraBotones.setRollover(true);
@@ -170,10 +199,10 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
         BarraBotones.add(jSeparator1);
 
         BotonNuevo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/palmaactiva/javaformacion/ui/icons/create.png"))); // NOI18N
-        BotonNuevo.setToolTipText("Nuevo...");
         BotonNuevo.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
         BotonNuevo.setFocusable(false);
         BotonNuevo.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        BotonNuevo.setToolTipText("Nuevo...");
         BotonNuevo.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         BotonNuevo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -183,11 +212,11 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
         BarraBotones.add(BotonNuevo);
 
         BotonEliminar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/palmaactiva/javaformacion/ui/icons/delete.png"))); // NOI18N
-        BotonEliminar.setToolTipText("Eliminar");
         BotonEliminar.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
         BotonEliminar.setEnabled(false);
         BotonEliminar.setFocusable(false);
         BotonEliminar.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        BotonEliminar.setToolTipText("Eliminar");
         BotonEliminar.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         BotonEliminar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -197,12 +226,17 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
         BarraBotones.add(BotonEliminar);
 
         BotonEditar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/palmaactiva/javaformacion/ui/icons/edit.png"))); // NOI18N
-        BotonEditar.setToolTipText("Editar...");
         BotonEditar.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
         BotonEditar.setEnabled(false);
         BotonEditar.setFocusable(false);
         BotonEditar.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        BotonEditar.setToolTipText("Editar...");
         BotonEditar.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        BotonEditar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BotonEditarActionPerformed(evt);
+            }
+        });
         BarraBotones.add(BotonEditar);
 
         TablaDatos.setAutoCreateRowSorter(true);
@@ -221,6 +255,11 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
 
         MenuItemAbrir.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
         MenuItemAbrir.setText("Abrir...");
+        MenuItemAbrir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                MenuItemAbrirActionPerformed(evt);
+            }
+        });
         MenuArchivo.add(MenuItemAbrir);
 
         MenuItemGuardar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_MASK));
@@ -234,6 +273,11 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
 
         MenuItemGuardarComo.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
         MenuItemGuardarComo.setText("Guardar Como...");
+        MenuItemGuardarComo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                MenuItemGuardarComoActionPerformed(evt);
+            }
+        });
         MenuArchivo.add(MenuItemGuardarComo);
         MenuArchivo.add(jSeparator3);
 
@@ -295,6 +339,16 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
             }
         });
         MenuEditar.add(MenuItemCursosAleatorios);
+        MenuEditar.add(jSeparator4);
+
+        MenuItemBorrar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_X, java.awt.event.InputEvent.ALT_MASK | java.awt.event.InputEvent.CTRL_MASK));
+        MenuItemBorrar.setText("Eliminar todos los datos");
+        MenuItemBorrar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                MenuItemBorrarActionPerformed(evt);
+            }
+        });
+        MenuEditar.add(MenuItemBorrar);
 
         BarraMenu.add(MenuEditar);
 
@@ -334,17 +388,35 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
     }//GEN-LAST:event_BotonCursosActionPerformed
 
     private void BotonNuevoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BotonNuevoActionPerformed
-        java.lang.Class<? extends Persona> tipoPersona = null;
-        if (this.modoActual == Modo.ALUMNOS) {
-            tipoPersona = Alumno.class;
-        } else if (this.modoActual == Modo.PROFESORES) {
-            tipoPersona = Profesor.class;
+        if (null != this.modoActual) {
+            java.lang.Class<? extends Tabulable> tipoTabulable = null;
+            java.lang.Class<? extends Persona> tipoPersona = null;
+
+            switch (this.modoActual) {
+                case ALUMNOS:
+                    tipoPersona = Alumno.class;
+                    tipoTabulable = tipoPersona;
+                    break;
+                case PROFESORES:
+                    tipoPersona = Profesor.class;
+                    tipoTabulable = tipoPersona;
+                    break;
+                case CURSOS:
+                    tipoTabulable = Curso.class;
+                    break;
+                default:
+                    break;
+            }
+            if (tipoTabulable == Curso.class) {
+                new DialogoNuevoCurso(this, true, this.datosAplicacion).setVisible(true);
+            } else {
+                new DialogoNuevaPersona(this, true, tipoPersona, this.datosAplicacion).setVisible(true);
+            }
         }
-        new DialogoNuevaPersona(this, rootPaneCheckingEnabled, tipoPersona, this.datosAplicacion).setVisible(true);
     }//GEN-LAST:event_BotonNuevoActionPerformed
 
     private void MenuItemSalirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemSalirActionPerformed
-        this.dispose();
+        this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
     }//GEN-LAST:event_MenuItemSalirActionPerformed
 
     private void MenuItemGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemGuardarActionPerformed
@@ -388,12 +460,77 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
     }//GEN-LAST:event_MenuItemCursosAleatoriosActionPerformed
 
     private void MenuItemExportarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemExportarActionPerformed
-        // TODO add your handling code here:
+        int valorRetorno = this.DialogoImportarExportar.showSaveDialog(this);
+        if (valorRetorno == JFileChooser.APPROVE_OPTION) {
+            String archivoSeleccionado = this.DialogoImportarExportar.getSelectedFile().getAbsolutePath();
+            archivoSeleccionado = this.comprobarExtensionArchivo(archivoSeleccionado, Datos.EXTENSION_JSON);
+            this.datosAplicacion.exportarDatos(this, archivoSeleccionado);
+        }
     }//GEN-LAST:event_MenuItemExportarActionPerformed
 
     private void MenuItemImportarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemImportarActionPerformed
-        // TODO add your handling code here:
+        int valorRetorno = this.DialogoImportarExportar.showOpenDialog(this);
+        if (valorRetorno == JFileChooser.APPROVE_OPTION) {
+            String archivoSeleccionado = this.DialogoImportarExportar.getSelectedFile().getAbsolutePath();
+            this.datosAplicacion.importarDatos(this, archivoSeleccionado);
+        }
     }//GEN-LAST:event_MenuItemImportarActionPerformed
+
+    private void BotonEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BotonEditarActionPerformed
+        this.editarFilaSeleccionada();
+    }//GEN-LAST:event_BotonEditarActionPerformed
+
+    private void MenuItemGuardarComoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemGuardarComoActionPerformed
+        int valorRetorno = this.DialogoSeleccionArchivo.showSaveDialog(this);
+        if (valorRetorno == JFileChooser.APPROVE_OPTION) {
+            String archivoSeleccionado = this.DialogoSeleccionArchivo.getSelectedFile().getAbsolutePath();
+            archivoSeleccionado = this.comprobarExtensionArchivo(archivoSeleccionado, Datos.EXTENSION_JAVAFORMACION);
+            this.datosAplicacion.guardarDatos(this, archivoSeleccionado);
+        }
+    }//GEN-LAST:event_MenuItemGuardarComoActionPerformed
+
+    private void MenuItemAbrirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemAbrirActionPerformed
+        int valorRetorno = this.DialogoSeleccionArchivo.showOpenDialog(this);
+        if (valorRetorno == JFileChooser.APPROVE_OPTION) {
+            String archivoSeleccionado = this.DialogoSeleccionArchivo.getSelectedFile().getAbsolutePath();
+            this.datosAplicacion.cargarDatos(this, archivoSeleccionado);
+        }
+    }//GEN-LAST:event_MenuItemAbrirActionPerformed
+
+    private void MenuItemBorrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MenuItemBorrarActionPerformed
+        this.datosAplicacion.borrarDatos(this);
+    }//GEN-LAST:event_MenuItemBorrarActionPerformed
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        if (!this.datosAplicacion.isDatosGuardados()) {
+            int opcionSeleccionada = JOptionPane.showConfirmDialog(this, "Existen datos sin guardar, ¿desea descartar los cambios y salir sin guardar?", "Advertencia: Datos sin guardar", JOptionPane.YES_NO_OPTION);
+            if (opcionSeleccionada == JOptionPane.YES_OPTION) {
+                System.exit(0);
+            }
+        } else {
+            System.exit(0);
+        }
+    }//GEN-LAST:event_formWindowClosing
+
+    private String comprobarExtensionArchivo(String archivoSeleccionado, String extension) {
+        if (!archivoSeleccionado.endsWith(extension)) {
+            if (archivoSeleccionado.contains(".")) {
+                archivoSeleccionado = archivoSeleccionado.substring(0, archivoSeleccionado.lastIndexOf(".")) + "." + extension;
+            } else {
+                archivoSeleccionado += "." + extension;
+            }
+        }
+        return archivoSeleccionado;
+    }
+
+    private void editarFilaSeleccionada() {
+        Tabulable seleccionado = this.getSelectedElement();
+        if (seleccionado instanceof Persona) {
+            new DialogoNuevaPersona(this, true, (Persona) seleccionado, this.datosAplicacion).setVisible(true);
+        } else {
+            new DialogoNuevoCurso(this, true, (Curso) seleccionado, this.datosAplicacion).setVisible(rootPaneCheckingEnabled);
+        }
+    }
 
     private void desselctionarBotones() {
         this.BotonAlumnos.setSelected(false);
@@ -416,7 +553,19 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
     }
 
     @Override
-    public void tareaCompletada() {
+    public void tareaCompletada(Acción accion) {
+        String mensaje = null;
+        switch (accion) {
+            case EXPORTAR:
+                mensaje = "Datos exportados con éxito.";
+                break;
+            case IMPORTAR:
+                mensaje = "Datos importados correctamente.";
+                break;
+        }
+        if (mensaje != null) {
+            JOptionPane.showMessageDialog(this, mensaje, "Tarea Completada", JOptionPane.INFORMATION_MESSAGE);
+        }
         this.actualizarDatos();
     }
 
@@ -468,8 +617,27 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
     }
 
     @Override
-    public void errorTarea(Exception ex) {
-        JOptionPane.showMessageDialog(this, ex.getMessage(), "ERROR Ejecutando Tarea", JOptionPane.ERROR_MESSAGE);
+    public void errorTarea(ExcepcionDatos ex) {
+        String mensajeError = null;
+        switch (ex.getAccionError()) {
+            case ABRIR:
+                mensajeError = "No se pudo abrir el archivo.";
+                break;
+            case GUARDAR:
+                mensajeError = "No se han podido guardar los datos.";
+                break;
+            case GUARDAR_COMO:
+                mensajeError = "No se pudo guardar el archivo.";
+                break;
+            case EXPORTAR:
+                mensajeError = "No se han podido exportar los datos.";
+                break;
+            case IMPORTAR:
+                mensajeError = "No se han podido importar los datos.";
+                break;
+        }
+        mensajeError = "<html>" + mensajeError + "<br/>" + ex.getExcepcionOriginal().getLocalizedMessage() + "</html>";
+        JOptionPane.showMessageDialog(this, mensajeError, "ERROR Ejecutando Tarea", JOptionPane.ERROR_MESSAGE);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -481,12 +649,14 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
     private javax.swing.JButton BotonEliminar;
     private javax.swing.JButton BotonNuevo;
     private javax.swing.JToggleButton BotonProfesores;
+    private javax.swing.JFileChooser DialogoImportarExportar;
     private javax.swing.JFileChooser DialogoSeleccionArchivo;
     private javax.swing.ButtonGroup GrupoModos;
     private javax.swing.JMenu MenuArchivo;
     private javax.swing.JMenu MenuEditar;
     private javax.swing.JMenuItem MenuItemAbrir;
     private javax.swing.JMenuItem MenuItemAlumnosAleatorios;
+    private javax.swing.JMenuItem MenuItemBorrar;
     private javax.swing.JMenuItem MenuItemCursosAleatorios;
     private javax.swing.JMenuItem MenuItemExportar;
     private javax.swing.JMenuItem MenuItemGuardar;
@@ -499,5 +669,6 @@ public class VentanaPrincipal extends javax.swing.JFrame implements Actualizable
     private javax.swing.JToolBar.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator3;
+    private javax.swing.JPopupMenu.Separator jSeparator4;
     // End of variables declaration//GEN-END:variables
 }

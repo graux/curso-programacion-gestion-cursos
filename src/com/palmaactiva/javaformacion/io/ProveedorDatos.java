@@ -21,6 +21,8 @@ public interface ProveedorDatos {
 
     void cargarDatos(Actualizable progresable);
 
+    void cargarDatos(Actualizable progresable, String rutaArchivo);
+
     void guardarDatos(Actualizable actualizable);
 
     void guardarDatos(Actualizable actualizable, String rutaArchivo);
@@ -33,6 +35,8 @@ public interface ProveedorDatos {
 
     void eliminarTabulable(Tabulable elemento, Actualizable ventana);
 
+    void borrarDatos(Actualizable ventana);
+
     boolean existeCurso(int IDCurso);
 
     boolean existeDNI(long DNIcomputado);
@@ -41,4 +45,11 @@ public interface ProveedorDatos {
         return existeDNI(Persona.computarDNI(DNI, NIE));
     }
 
+    Profesor buscarProfesor(long dniComputado);
+
+    Alumno buscarAlumno(long dniComputado);
+
+    boolean isDatosGuardados();
+
+    void setDatosGuardados(boolean nuevoEstado);
 }

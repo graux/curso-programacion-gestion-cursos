@@ -2,7 +2,7 @@ package com.palmaactiva.javaformacion.io;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
+import com.palmaactiva.javaformacion.io.models.DatosJSON;
 import com.palmaactiva.javaformacion.lib.Alumno;
 import com.palmaactiva.javaformacion.lib.Curso;
 import com.palmaactiva.javaformacion.lib.Profesor;
@@ -17,6 +17,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,11 +28,14 @@ import java.util.Map;
  */
 public class Datos implements ProveedorDatos {
 
-    public static final String EXTENSION = "jfd";
+    public static final String EXTENSION_JAVAFORMACION = "jfd";
+    public static final String EXTENSION_JSON = "json";
     public static final String CARPETA = "JavaFormacion";
     private Map<Long, Alumno> alumnos;
     private Map<Long, Profesor> docentes;
     private Map<Long, Curso> cursos;
+    private String rutaArchivoActual = null;
+    private boolean datosGuardados = true;
 
     public enum SistemaOperativo {
         LINUX,
@@ -50,65 +54,27 @@ public class Datos implements ProveedorDatos {
         }
     }
 
-    private void notificarTareaCompletada(Actualizable actualizable) {
+    private void notificarTareaCompletada(Actualizable actualizable, Actualizable.Acción accion) {
         if (actualizable != null) {
-            actualizable.tareaCompletada();
+            actualizable.tareaCompletada(accion);
         }
     }
 
-    private void notificarErrorTarea(Actualizable actualizable, Exception ex) {
+    private void notificarErrorTarea(Actualizable actualizable, ExcepcionDatos exDatos) {
         if (actualizable != null) {
-            actualizable.errorTarea(ex);
+            actualizable.errorTarea(exDatos);
         }
-    }
-
-    @Override
-    public void guardarDatos(Actualizable actualizable) {
-        try {
-            this.guardarAlumnos();
-            this.guardarDocentes();
-            this.guardarCursos();
-            actualizable.tareaCompletada();
-        } catch (Exception ex) {
-            this.notificarErrorTarea(actualizable, ex);
-        }
-    }
-
-    protected void guardarAlumnos() throws Exception {
-        this.guardarDatosEnArchivo(getArchivoDatosAlumnos(), this.getAlumnos());
-    }
-
-    protected void guardarDocentes() throws Exception {
-        this.guardarDatosEnArchivo(getArchivoDatosDocentes(), this.getDocentes());
-    }
-
-    protected void guardarCursos() throws Exception {
-        this.guardarDatosEnArchivo(getArchivoDatosCursos(), this.getCursos());
     }
 
     protected void guardarDatosEnArchivo(String rutaArchivo, Collection<? extends Tabulable> datos) throws Exception {
         try {
             comprobarDirectorioDatos();
             try (ObjectOutputStream escritor = new ObjectOutputStream(new FileOutputStream(rutaArchivo))) {
-                escritor.writeObject(datos);
+                escritor.writeObject(datos.toArray(new Tabulable[datos.size()]));
+                this.datosGuardados = true;
             } catch (FileNotFoundException fnfEx) {
                 System.out.println("Error Guardando Datos, el archivo no existe: " + fnfEx.getLocalizedMessage());
                 throw fnfEx;
-            }
-        } catch (IOException ioEx) {
-            System.out.println("Error creando archivo/carpeta datos: " + ioEx.getLocalizedMessage());
-            throw ioEx;
-        }
-    }
-
-    protected void exportarDatosEnArchivo(String rutaArchivo, Collection<? extends Tabulable> datos) throws Exception {
-        try {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            try (OutputStreamWriter escritor = new OutputStreamWriter(new FileOutputStream(rutaArchivo))) {
-                gson.toJson(datos, escritor);
-            } catch (JsonIOException jsonEx) {
-                System.out.println("Error codificando JSON: " + jsonEx.getLocalizedMessage());
-                throw jsonEx;
             }
         } catch (IOException ioEx) {
             System.out.println("Error creando archivo/carpeta datos: " + ioEx.getLocalizedMessage());
@@ -123,96 +89,32 @@ public class Datos implements ProveedorDatos {
         }
     }
 
-    @Override
-    public void cargarDatos(Actualizable progresable) {
-
-//        this.cargarAlumnos();
-//        this.cargarDocentes();
-//        this.cargarCursos();
-        progresable.tareaCompletada();
-    }
-
-//    protected void cargarAlumnos() {
-//        String rutaArchivo = getArchivoDatosAlumnos();
-//        try {
-//            Alumno[] alumnos = this.cargarDatos(rutaArchivo, Alumno[].class);
-//            if (alumnos != null) {
-//                for (Alumno alumno : alumnos) {
-//                    this.añadirAlumno(alumno);
-//                }
-//            }
-//        } catch (IOException ioEx) {
-//            System.out.println("No se pudieron cargar los alumnos");
-//        }
-//    }
-//
-//    protected void cargarDocentes() {
-//        String rutaArchivo = getArchivoDatosDocentes();
-//        try {
-//            Profesor[] profresores = this.cargarDatos(rutaArchivo, Profesor[].class);
-//            if (profresores != null) {
-//                for (Profesor profesor : profresores) {
-//                    this.añadirProfesor(profesor);
-//                }
-//            }
-//        } catch (IOException ioEx) {
-//            System.out.println("No se pudieron cargar los profesores");
-//        }
-//    }
-//
-//    protected void cargarCursos() {
-//        String rutaArchivo = getArchivoDatosDocentes();
-//        try {
-//            Curso[] cursos = this.cargarDatos(rutaArchivo, Curso[].class);
-//            if (cursos != null) {
-//                for (Curso curso : cursos) {
-//                    this.añadirCurso(curso);
-//                }
-//            }
-//        } catch (IOException ioEx) {
-//            System.out.println("No se pudieron cargar los cursos");
-//        }
-//    }
-    private Tabulable[] cargarDatos(String rutaArchivo) throws ClassNotFoundException, IOException {
+    private void cargarDatosDesdeArchivo(String rutaArchivo) throws ClassNotFoundException, IOException {
         if (existeArchivo(rutaArchivo)) {
             try (ObjectInputStream lector = new ObjectInputStream(new FileInputStream(rutaArchivo))) {
-                return (Tabulable[]) lector.readObject();
+                Tabulable[] todosLosDatos = (Tabulable[]) lector.readObject();
+                this.recargarDatos(todosLosDatos);
             } catch (ClassNotFoundException cnfEx) {
                 System.out.println("Error deserializando clase: " + cnfEx.getLocalizedMessage());
                 throw cnfEx;
             }
         }
-        return null;
     }
 
-    private <T extends Tabulable> T[] importarDatos(String rutaArchivo, Class<T[]> claseDatos) throws IOException {
-        if (existeArchivo(rutaArchivo)) {
-            Gson gson = new GsonBuilder().create();
-            try (InputStreamReader lector = new InputStreamReader(new FileInputStream(rutaArchivo))) {
-                T[] datos = gson.fromJson(lector, claseDatos);
-                return datos;
-            } catch (JsonIOException jsonEx) {
-                System.out.println("Error codificando JSON: " + jsonEx.getLocalizedMessage());
-                throw jsonEx;
-            }
+    private void recargarDatos(Tabulable[] todosLosDatos) {
+        this.borrarDatos(null);
+        for (Tabulable tabulable : todosLosDatos) {
+            this.añadirTabulable(tabulable, null);
         }
-        return null;
+        this.datosGuardados = true;
     }
 
     private boolean existeArchivo(String rutaArchivo) {
         return Files.exists(Paths.get(rutaArchivo));
     }
 
-    protected String getArchivoDatosAlumnos() {
-        return getDatosDir() + "/alumnos." + EXTENSION;
-    }
-
-    protected String getArchivoDatosDocentes() {
-        return getDatosDir() + "/docentes." + EXTENSION;
-    }
-
-    protected String getArchivoDatosCursos() {
-        return getDatosDir() + "/cursos." + EXTENSION;
+    protected String getArchivoDatos() {
+        return getDatosDir() + "/datos." + EXTENSION_JAVAFORMACION;
     }
 
     protected String getDatosDir() {
@@ -242,20 +144,6 @@ public class Datos implements ProveedorDatos {
         return null;
     }
 
-    @Override
-    public void añadirTabulable(Tabulable nuevaInstancia, Actualizable ventana) {
-        if (nuevaInstancia instanceof Alumno) {
-            this.añadirAlumno((Alumno) nuevaInstancia);
-        } else if (nuevaInstancia instanceof Profesor) {
-            this.añadirProfesor((Profesor) nuevaInstancia);
-        } else if (nuevaInstancia instanceof Curso) {
-            this.añadirCurso((Curso) nuevaInstancia);
-        }
-        if (ventana != null) {
-            ventana.actualizarDatos();
-        }
-    }
-
     protected void añadirAlumno(Alumno nuevoAlumno) {
         this.alumnos.put(nuevoAlumno.getNumeroDNIComputado(), nuevoAlumno);
     }
@@ -266,6 +154,11 @@ public class Datos implements ProveedorDatos {
 
     protected void añadirCurso(Curso curso) {
         this.cursos.put((long) curso.getCodigo(), curso);
+        if (curso.getAlumnos() != null) {
+            for (Alumno alumno : curso.getAlumnos()) {
+                alumno.addCurso(curso);
+            }
+        }
     }
 
     @Override
@@ -300,6 +193,7 @@ public class Datos implements ProveedorDatos {
         if (mapaDatos != null && mapaDatos.containsKey(keyValue)) {
             mapaDatos.remove(keyValue);
         }
+        this.datosGuardados = false;
         ventana.actualizarDatos();
     }
 
@@ -314,17 +208,105 @@ public class Datos implements ProveedorDatos {
     }
 
     @Override
-    public void guardarDatos(Actualizable actualizable, String rutaArchivo) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void cargarDatos(Actualizable actualizable) {
+        this.cargarDatos(actualizable, this.getArchivoDatos());
+    }
+
+    @Override
+    public void añadirTabulable(Tabulable nuevaInstancia, Actualizable ventana) {
+        if (nuevaInstancia instanceof Alumno) {
+            this.añadirAlumno((Alumno) nuevaInstancia);
+        } else if (nuevaInstancia instanceof Profesor) {
+            this.añadirProfesor((Profesor) nuevaInstancia);
+        } else if (nuevaInstancia instanceof Curso) {
+            this.añadirCurso((Curso) nuevaInstancia);
+        }
+        this.datosGuardados = false;
+        if (ventana != null) {
+            ventana.actualizarDatos();
+        }
+    }
+
+    @Override
+    public void cargarDatos(Actualizable actualizable, String rutaArchivo) {
+        try {
+            this.cargarDatosDesdeArchivo(rutaArchivo);
+            this.rutaArchivoActual = rutaArchivo;
+            this.notificarTareaCompletada(actualizable, Actualizable.Acción.ABRIR);
+        } catch (IOException | ClassNotFoundException ex) {
+            this.notificarErrorTarea(actualizable, new ExcepcionDatos(Actualizable.Acción.ABRIR, ex));
+        }
     }
 
     @Override
     public void exportarDatos(Actualizable actualizable, String rutaArchivo) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        DatosJSON datosAExportar = new DatosJSON(this.alumnos.values(), this.docentes.values(), this.cursos.values());
+        Gson exportador = new GsonBuilder().setPrettyPrinting().create();
+        try (OutputStreamWriter escritor = new OutputStreamWriter(new FileOutputStream(rutaArchivo))) {
+            exportador.toJson(datosAExportar, escritor);
+            this.notificarTareaCompletada(actualizable, Actualizable.Acción.EXPORTAR);
+        } catch (IOException ex) {
+            this.notificarErrorTarea(actualizable, new ExcepcionDatos(Actualizable.Acción.EXPORTAR, ex));
+        }
     }
 
     @Override
     public void importarDatos(Actualizable actualizable, String rutaArchivo) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Gson importador = new GsonBuilder().setPrettyPrinting().create();
+        try (InputStreamReader lector = new InputStreamReader(new FileInputStream(rutaArchivo))) {
+            DatosJSON datos = importador.fromJson(lector, DatosJSON.class);
+            this.recargarDatos(datos.getTabulables());
+            this.notificarTareaCompletada(actualizable, Actualizable.Acción.IMPORTAR);
+        } catch (IOException ex) {
+            this.notificarErrorTarea(actualizable, new ExcepcionDatos(Actualizable.Acción.EXPORTAR, ex));
+        }
+    }
+
+    @Override
+    public void guardarDatos(Actualizable actualizable) {
+        String archivoAGuardar = this.rutaArchivoActual == null ? this.getArchivoDatos() : this.rutaArchivoActual;
+        this.guardarDatos(actualizable, this.getArchivoDatos());
+    }
+
+    @Override
+    public void guardarDatos(Actualizable actualizable, String rutaArchivo) {
+        Actualizable.Acción accion = rutaArchivo == this.getArchivoDatos() ? Actualizable.Acción.GUARDAR : Actualizable.Acción.GUARDAR_COMO;
+        try {
+            Collection<Tabulable> todosLosDatos = new ArrayList<>(this.alumnos.values());
+            todosLosDatos.addAll(this.docentes.values());
+            todosLosDatos.addAll(this.cursos.values());
+            this.guardarDatosEnArchivo(rutaArchivo, todosLosDatos);
+            actualizable.tareaCompletada(accion);
+        } catch (Exception ex) {
+            this.notificarErrorTarea(actualizable, new ExcepcionDatos(accion, ex));
+        }
+    }
+
+    @Override
+    public Profesor buscarProfesor(long dniComputado) {
+        return this.docentes.get(dniComputado);
+    }
+
+    @Override
+    public Alumno buscarAlumno(long dniComputado) {
+        return this.alumnos.get(dniComputado);
+    }
+
+    @Override
+    public void borrarDatos(Actualizable actualizable) {
+        this.alumnos = new HashMap<>();
+        this.docentes = new HashMap<>();
+        this.cursos = new HashMap<>();
+        this.notificarTareaCompletada(actualizable, Actualizable.Acción.BORRAR);
+    }
+
+    @Override
+    public boolean isDatosGuardados() {
+        return this.datosGuardados;
+    }
+
+    @Override
+    public void setDatosGuardados(boolean nuevoEstado) {
+        this.datosGuardados = nuevoEstado;
     }
 }

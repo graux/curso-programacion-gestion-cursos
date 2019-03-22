@@ -5,9 +5,18 @@ package com.palmaactiva.javaformacion.io;
  */
 public interface Actualizable {
 
-    public void tareaCompletada();
+    public enum Acción {
+        GUARDAR,
+        GUARDAR_COMO,
+        ABRIR,
+        EXPORTAR,
+        IMPORTAR,
+        BORRAR
+    }
+
+    public void tareaCompletada(Acción accion);
 
     public void actualizarDatos();
 
-    public void errorTarea(Exception ex);
+    public void errorTarea(ExcepcionDatos ex);
 }
