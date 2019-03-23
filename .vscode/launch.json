@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - JavaFormacion",
+            "request": "launch",
+            "mainClass": "com.palmaactiva.javaformacion.JavaFormacion",
+            "projectName": "JavaFormacion_555627bc"
+        }
+    ]
+}
